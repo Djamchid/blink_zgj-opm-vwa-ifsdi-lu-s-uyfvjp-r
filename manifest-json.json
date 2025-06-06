@@ -1,0 +1,80 @@
+{
+  "name": "BlinkTracker - Suivi des clignements pour Parkinson",
+  "short_name": "BlinkTracker",
+  "description": "Application de suivi des clignements oculaires pour l'évaluation de l'état dopaminergique chez les patients parkinsoniens",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#2196F3",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "health"],
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Nouveau test",
+      "short_name": "Test",
+      "description": "Démarrer un nouveau test de clignement",
+      "url": "/?action=test",
+      "icons": [
+        {
+          "src": "icons/test-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Historique",
+      "short_name": "Historique",
+      "description": "Voir l'historique des tests",
+      "url": "/?action=history",
+      "icons": [
+        {
+          "src": "icons/history-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "label": "Écran d'accueil"
+    },
+    {
+      "src": "screenshots/test.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "label": "Test en cours"
+    },
+    {
+      "src": "screenshots/results.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "label": "Résultats"
+    }
+  ],
+  "related_applications": [],
+  "permissions": [
+    "camera",
+    "storage"
+  ]
+}
