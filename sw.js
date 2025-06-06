@@ -3,16 +3,16 @@
 const CACHE_NAME = 'blinktracker-cache-v1';
 // const CACHE_NAME = 'blinktracker-v1.0.0';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/storage.js',
-    '/ui.js',
-    '/camera.js',
-    '/analysis.js',
-    '/export.js',
-    '/manifest.json',
+    './',
+    './index.html',
+    './styles.css',
+    './app.js',
+    './storage.js',
+    './ui.js',
+    './camera.js',
+    './analysis.js',
+    './export.js',
+    './manifest.json',
     'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js',
     'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js'
 ];
