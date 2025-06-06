@@ -703,6 +703,6 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Enregistrer le service worker pour le mode PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(console.error);
+        navigator.serviceWorker.register('./sw.js').catch(console.error);
     }
 });
