@@ -36,6 +36,9 @@ export class Camera {
         this.video = document.getElementById(videoId);
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
+
+        // Add willReadFrequently option
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         
         // Initialiser MediaPipe FaceMesh
         if (window.FaceMesh) {
