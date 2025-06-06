@@ -30,14 +30,15 @@ export class Camera {
         
         this.frameCount = 0;
         this.trackingLossCount = 0;
+        this.startTime = Date.now();
+        this.brightnessHistory = []; // Initialisation de l'historique
     }
 
     async init(videoId, canvasId) {
         this.video = document.getElementById(videoId);
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
 
-        // Add willReadFrequently option
+        // Get context with willReadFrequently optimization
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         
         // Initialiser MediaPipe FaceMesh
@@ -73,6 +74,7 @@ export class Camera {
             
             this.video.srcObject = this.stream;
             this.isRunning = true;
+            this.startTime = Date.now(); // Reset start time
             
             // Attendre que la vidéo soit prête
             await new Promise((resolve) => {
@@ -179,7 +181,8 @@ export class Camera {
         if (this.onQualityUpdate && this.frameCount % 30 === 0) {
             this.onQualityUpdate({
                 trackingLoss: this.trackingLossCount,
-                totalFrames: this.frameCount
+                totalFrames: this.frameCount,
+                fps: Math.round(this.frameCount / ((Date.now() - this.startTime) / 1000))
             });
         }
     }
@@ -256,94 +259,95 @@ export class Camera {
     }
 
     checkLighting() {
-        // camera.js - Improve lighting check performance
         // Only check lighting every 10 frames
         if (this.frameCount % 10 !== 0) return;
         
-        // Rest of the lighting check code...
-        // Analyse simple de la luminosité
-        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        const data = imageData.data;
-        
-        let brightness = 0;
-        const sampleSize = 10000; // Échantillonner certains pixels
-        const step = Math.floor(data.length / sampleSize);
-        
-        for (let i = 0; i < data.length; i += step) {
-            brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-        
-        brightness = brightness / sampleSize;
-        
-        // Seuils de luminosité acceptables
-        const isLightingOK = brightness > 50 && brightness < 200;
-        
-        if (this.onLightingOK) {
-            this.onLightingOK(isLightingOK);
+        try {
+            // Analyse de la luminosité avec échantillonnage
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            const data = imageData.data;
+            const pixelCount = data.length / 4;
+            const sampleSize = Math.min(10000, pixelCount);
+            const step = Math.floor(pixelCount / sampleSize) * 4;
+            
+            let brightness = 0;
+            for (let i = 0; i < data.length; i += step) {
+                // Formule de luminance standard (Rec. 709)
+                brightness += 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+            }
+            
+            brightness = brightness / sampleSize;
+            
+            // Seuils de luminosité acceptables
+            const isLightingOK = brightness > 50 && brightness < 200;
+            
+            if (this.onLightingOK) {
+                this.onLightingOK(isLightingOK);
+            }
+        } catch (e) {
+            console.warn("Erreur d'analyse de luminosité:", e);
         }
     }
 
-    // Méthode de fallback pour la détection de clignements
     simpleBlinkDetection() {
-        // Cette méthode utilise la détection de changement de pixels
-        // dans la région des yeux (moins précise mais fonctionne sans MediaPipe)
-        
         this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
         
         // Définir une région d'intérêt approximative pour les yeux
-        const roiY = this.canvas.height * 0.3;
-        const roiHeight = this.canvas.height * 0.2;
-        const roiX = this.canvas.width * 0.2;
-        const roiWidth = this.canvas.width * 0.6;
+        const roiX = this.canvas.width * 0.2;      // Position X
+        const roiY = this.canvas.height * 0.3;      // Position Y
+        const roiWidth = this.canvas.width * 0.6;   // Largeur
+        const roiHeight = this.canvas.height * 0.2; // Hauteur
         
-        const imageData = this.ctx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        const data = imageData.data;
-        
-        // Calculer la luminosité moyenne
-        let brightness = 0;
-        for (let i = 0; i < data.length; i += 4) {
-            brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-        brightness = brightness / (data.length / 4);
-        
-        // Stocker l'historique de luminosité
-        if (!this.brightnessHistory) {
-            this.brightnessHistory = [];
-        }
-        
-        this.brightnessHistory.push(brightness);
-        if (this.brightnessHistory.length > 10) {
-            this.brightnessHistory.shift();
-        }
-        
-        // Détecter les changements brusques de luminosité
-        if (this.brightnessHistory.length >= 5) {
-            const recent = this.brightnessHistory.slice(-5);
-            const avg = recent.reduce((a, b) => a + b) / recent.length;
-            const current = brightness;
+        try {
+            const imageData = this.ctx.getImageData(roiX, roiY, roiWidth, roiHeight);
+            const data = imageData.data;
+            const pixelCount = roiWidth * roiHeight;
             
-            // Un clignement provoque généralement une baisse de luminosité
-            if (Math.abs(current - avg) > avg * 0.1) {
-                if (!this.lastBlinkTime || Date.now() - this.lastBlinkTime > 300) {
-                    this.lastBlinkTime = Date.now();
-                    
-                    if (this.onBlinkDetected) {
-                        this.onBlinkDetected({
-                            timestamp: Date.now(),
-                            duration: 200, // Durée estimée
-                            method: 'simple'
-                        });
+            // Calculer la luminosité moyenne
+            let brightness = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                // Formule de luminance standard
+                brightness += 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+            }
+            brightness = brightness / pixelCount;
+            
+            // Stocker l'historique de luminosité
+            this.brightnessHistory.push(brightness);
+            if (this.brightnessHistory.length > 10) {
+                this.brightnessHistory.shift();
+            }
+            
+            // Détecter les changements brusques de luminosité
+            if (this.brightnessHistory.length >= 5) {
+                const recent = this.brightnessHistory.slice(-5);
+                const avg = recent.reduce((a, b) => a + b) / recent.length;
+                
+                // Un clignement provoque généralement une baisse de luminosité
+                if (Math.abs(brightness - avg) > avg * 0.15) {
+                    if (!this.lastBlinkTime || Date.now() - this.lastBlinkTime > 300) {
+                        this.lastBlinkTime = Date.now();
+                        
+                        if (this.onBlinkDetected) {
+                            this.onBlinkDetected({
+                                timestamp: Date.now(),
+                                duration: 200, // Durée estimée
+                                method: 'simple'
+                            });
+                        }
                     }
                 }
             }
-        }
-        
-        // Indicateurs de base
-        if (this.onFaceDetected) {
-            this.onFaceDetected(brightness > 30);
-        }
-        if (this.onLightingOK) {
-            this.onLightingOK(brightness > 50 && brightness < 200);
+            
+            // Indicateurs de base
+            if (this.onFaceDetected) {
+                this.onFaceDetected(brightness > 30);
+            }
+            if (this.onLightingOK) {
+                this.onLightingOK(brightness > 50 && brightness < 200);
+            }
+            
+        } catch (e) {
+            console.warn("Erreur de détection simple:", e);
         }
     }
 
@@ -382,11 +386,16 @@ export class Camera {
     getVideoStats() {
         if (!this.video) return null;
         
+        const elapsed = (Date.now() - this.startTime) / 1000;
+        const fps = elapsed > 0 ? Math.round(this.frameCount / elapsed) : 0;
+        
         return {
             width: this.video.videoWidth,
             height: this.video.videoHeight,
-            fps: this.frameCount / (Date.now() - this.startTime) * 1000,
-            trackingQuality: 1 - (this.trackingLossCount / this.frameCount)
+            fps: fps,
+            trackingQuality: this.frameCount > 0 
+                ? 1 - (this.trackingLossCount / this.frameCount) 
+                : 0
         };
     }
 }
