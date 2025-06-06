@@ -256,6 +256,11 @@ export class Camera {
     }
 
     checkLighting() {
+        // camera.js - Improve lighting check performance
+        // Only check lighting every 10 frames
+        if (this.frameCount % 10 !== 0) return;
+        
+        // Rest of the lighting check code...
         // Analyse simple de la luminosité
         const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         const data = imageData.data;
