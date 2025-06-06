@@ -1,6 +1,7 @@
 // sw.js - Service Worker pour BlinkTracker
-
-const CACHE_NAME = 'blinktracker-v1.0.0';
+// sw.js - Update cache name
+const CACHE_NAME = 'blinktracker-cache-v1';
+// const CACHE_NAME = 'blinktracker-v1.0.0';
 const urlsToCache = [
     '/',
     '/index.html',
